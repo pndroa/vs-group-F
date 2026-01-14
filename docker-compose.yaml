@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # --- Database ---
+  postgresdb:
+    image: postgres:14.19
+    container_name: todopsql
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: postgres
+    ports:
+      - '5432:5432'
+    networks:
+      - app-network
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # --- Backend ---
+  backend:
+    container_name: spring-backend
+    build:
+      context: ./starterapp
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://todopsql:5432/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: mysecretpassword
+    ports:
+      - '8080:8080'
+    depends_on:
+      - postgresdb
+    networks:
+      - app-network
+
+  # --- Frontend ---
+  frontend:
+    container_name: to-do-app
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - '3000:80'
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    name: todonet
+
+volumes:
+  postgres-data:
